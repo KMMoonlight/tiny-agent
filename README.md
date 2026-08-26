@@ -18,6 +18,19 @@
 npx tsx 01ReAct/main.ts
 ```
 
+### [02 · Tools](./02Tools/TUTORIAL.md)
+
+在 ReAct 循环的基础上，把工具系统扩展成完整形态：六个工具协同完成一条有数据依赖的七步任务。
+
+- ToolRegistry：统一管理工具的注册、schema 收集和执行，错误统一包装后反馈给模型
+- ToolContext：工具间共享的运行时状态，`save_note` 写入、`list_notes` 读取
+- 六个工具的完整实现：计算、文本统计、时区时间、本地知识库检索、笔记存取
+- 多工具编排：一步内并行调用多个工具、跨步传递中间结果、更详细的 system prompt 规则
+
+```bash
+npx tsx 02Tools/main.ts
+```
+
 ## 准备工作
 
 ```bash
