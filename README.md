@@ -31,6 +31,19 @@ npx tsx 01ReAct/main.ts
 npx tsx 02Tools/main.ts
 ```
 
+### [03 · Hooks](./03Hooks/TUTORIAL.md)
+
+在 ReAct 循环的关键节点引入生命周期钩子，把日志、指标、安全拦截这类横切逻辑从 Agent 主流程中拆出来。
+
+- 五个钩子点：onRunStart / onStepStart / onToolCall / onToolResult / onRunEnd，覆盖观测与拦截两类需求
+- HookManager：统一管理多个钩子的注册与触发，onToolCall 支持短路拦截
+- 三个示例钩子：日志（从 Agent 搬出的 console.log）、有状态的指标统计、save_note 安全策略拦截
+- 拦截即反馈：被钩子阻止的调用包装成失败的 Observation，模型读到原因后自行调整
+
+```bash
+npx tsx 03Hooks/main.ts
+```
+
 ## 准备工作
 
 ```bash
