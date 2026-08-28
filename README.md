@@ -44,6 +44,19 @@ npx tsx 02Tools/main.ts
 npx tsx 03Hooks/main.ts
 ```
 
+### [04 · Permission](./04Permission/TUTORIAL.md)
+
+在 Hooks 之上加一层权限系统：三级风险模型 + 人工审批，让"模型想做什么"必须经过"人允许做什么"这道闸门。
+
+- 三级风险模型：safe 自动放行、sensitive 暂停循环请求人工审批、dangerous 一律拒绝
+- 审批钩子：readline 终端交互，y 批准一次 / n 拒绝 / a 本次运行内总是允许
+- 白名单思维：未被策略覆盖的未知工具默认按 sensitive 处理
+- Agent 零改动：审批只是又一个 onToolCall 钩子，决定仍走 ToolCallDecision 通道反馈给模型
+
+```bash
+npx tsx 04Permission/main.ts
+```
+
 ## 准备工作
 
 ```bash
