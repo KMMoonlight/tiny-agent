@@ -57,6 +57,32 @@ npx tsx 03Hooks/main.ts
 npx tsx 04Permission/main.ts
 ```
 
+### [05 · System Prompt](./05SystemPrompt/TUTORIAL.md)
+
+把硬编码在 Agent 里的系统提示词变成一等工程产物：依赖注入、分节组装、运行期上下文注入。
+
+- 提示词即依赖：system prompt 移出 `agent.ts`，变为构造函数参数，改提示词不再碰核心循环
+- 分节组装：Role / Tool Rules / Runtime Context / Output Format，提示词成为自文档化的配置
+- 上下文注入：当前时间、可用工具清单（与 ToolRegistry 同源）织入提示词，省掉一次工具往返
+- 提示词不是安全边界：提示词负责"引导"，03/04 章的钩子与权限负责"强制"
+
+```bash
+npx tsx 05SystemPrompt/main.ts
+```
+
+### [06 · Write Todo](./06WriteTodo/TUTORIAL.md)
+
+给 Agent 一个 `write_todo` 工具，让模型自己把计划写下来、边做边更新——把"规划"从隐式推理外化到上下文里。
+
+- 问题场景：多步任务中计划只存在于模型的隐式推理里，消息历史变长后漏步骤、重复步骤、顺序漂移
+- todo 清单是模型的记忆：每次调用和 Observation 都进入消息历史，之后每一步 LLM 请求都会重读最新计划
+- 全量覆写设计：每次重写完整清单，Observation 自带全貌，重写即复习
+- 状态机 + 校验：pending / in_progress / completed，最多一个 in_progress，错误即反馈
+
+```bash
+npx tsx 06WriteTodo/main.ts
+```
+
 ## 准备工作
 
 ```bash
