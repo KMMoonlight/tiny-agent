@@ -83,6 +83,32 @@ npx tsx 05SystemPrompt/main.ts
 npx tsx 06WriteTodo/main.ts
 ```
 
+### [07 · Skills](./07Skills/TUTORIAL.md)
+
+给 Agent 一个 `load_skill` 工具，把专业能力打包成独立的 SKILL.md 文件——元数据常驻提示词，完整指令按需加载（渐进式披露）。
+
+- 问题场景：所有能力指令都堆在系统提示词里，提示词膨胀、注意力稀释、改格式要改代码
+- SKILL.md = frontmatter 元数据（name/description，常驻提示词）+ 正文规范（存在文件里，按需加载）
+- SkillRegistry：启动时扫描技能目录、解析 frontmatter；`list()` 给提示词、`get()` 给工具，两个粒度分离
+- 加载即注入：skill 正文作为 Observation 进入消息历史，循环、钩子、权限零改动
+
+```bash
+npx tsx 07Skills/main.ts
+```
+
+### [08 · Context Compact](./08ContextCompact/TUTORIAL.md)
+
+消息历史只增不减，撞上上下文窗口只是时间问题。本章给 Agent 加上下文压缩：历史超过预算时，用 LLM 把中段总结成摘要，只保留 system prompt + 摘要 + 最近几条消息。
+
+- 压缩结构：system prompt 不动 + 摘要替代中段 + 最近 N 条原样保留（正在进行的工具调用链不能拆）
+- 摘要由 LLM 自己写：原始任务、已完成步骤的精确数据、todo 状态、剩余工作，四要素缺一就会跑偏
+- 边界处理：tail 不能以 tool 消息开头（tool_call 配对约束），切口向前回溯
+- 新钩子点 onCompact：压缩事件走钩子通道，不进核心循环
+
+```bash
+npx tsx 08ContextCompact/main.ts
+```
+
 ## 准备工作
 
 ```bash
