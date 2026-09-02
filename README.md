@@ -109,6 +109,32 @@ npx tsx 07Skills/main.ts
 npx tsx 08ContextCompact/main.ts
 ```
 
+### [09 · Sub Agents](./09SubAgents/TUTORIAL.md)
+
+把自包含的子任务派给子代理：它在自己的隔离上下文里跑完整个 ReAct 循环，主 Agent 只看到一句最终答案——中间过程根本不进主上下文。
+
+- 子代理只是一个工具：`spawn_subagent` 走普通工具通道，循环、钩子、权限、压缩零改动
+- 上下文隔离：每次调用 `new Agent(...)` 得到全新消息历史和 ToolContext，隔离即"再 new 一个实例"
+- 信息瓶颈：任务描述必须自包含（子代理看不到父的对话），子代理没写进答案的数据等于丢失
+- 工具子集即权限边界：`SubagentSpec` 声明可用工具，天然锁死嵌套深度，比提示词约束可靠
+
+```bash
+npx tsx 09SubAgents/main.ts
+```
+
+### [10 · Memory](./10Memory/TUTORIAL.md)
+
+给 Agent 跨运行的长期记忆：一个持久化到文件的记忆库 + `save_memory` / `search_memory` 两个工具——这次运行学到的事，下次运行还能捞回来。
+
+- 两类记忆的分工：消息历史 / notes / todos 是工作记忆（单次运行），memory.json 是长期记忆（跨进程），判断标准是"这条信息下次运行还有用吗"
+- 写入纪律决定记忆质量：只写稳定事实，任务中间状态进 notes/todos，不进长期记忆
+- 检索而非全量注入：记忆按需搜，与 skills 渐进式披露、上下文压缩同源——提示词是最贵的地段
+- `save_memory` 定级 sensitive：写错的记忆污染未来每一次运行，写入必须经过人工审批
+
+```bash
+npx tsx 10Memory/main.ts
+```
+
 ## 准备工作
 
 ```bash
