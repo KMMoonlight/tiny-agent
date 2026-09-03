@@ -104,7 +104,7 @@ execute(_args, context) {
 }
 ```
 
-`save_note` 写入的笔记，`list_notes` 能读到——两个工具通过 `context` 间接通信。这个 `context` 由 Agent 持有（`agent.ts` 第 15 行创建），在每次执行工具时传入：
+`save_note` 写入的笔记，`list_notes` 能读到，两个工具通过 `context` 间接通信。这个 `context` 由 Agent 持有（`agent.ts` 第 15 行创建），在每次执行工具时传入：
 
 ```
         Agent 持有
@@ -170,14 +170,14 @@ type ToolExecutionResult =
   | { success: false; error: string };
 ```
 
-这个统一的结果对象会被 `JSON.stringify` 后作为 `tool` 消息反馈给模型——成功时模型读到结果，失败时模型读到错误信息，可以在下一轮自我纠正。
+这个统一的结果对象会被 `JSON.stringify` 后作为 `tool` 消息反馈给模型：成功时模型读到结果，失败时模型读到错误信息，可以在下一轮自我纠正。
 
 ## 六个工具
 
 每个工具都是同一个模式的实例：`definition`（给模型看的 schema）+ `execute`（本地实现）。除此之外，本章的工具有两个共同点：
 
 - `execute` 开头先做**运行时类型检查**（如 `typeof a !== "number"` 就抛错），因为参数来自模型生成的 JSON，类型断言之外再加一道防线
-- schema 的每个参数都带 `description`，`description` 写明了"什么时候该用这个工具"——模型选择工具的唯一依据就是这些文字
+- schema 的每个参数都带 `description`，`description` 写明了"什么时候该用这个工具"，模型选择工具的唯一依据就是这些文字
 
 ### calculator（calculator.ts）
 
@@ -187,7 +187,7 @@ type ToolExecutionResult =
 operation: "add" | "subtract" | "multiply" | "divide" | "power"
 ```
 
-`default` 分支抛出 `Unknown operation`——模型传了枚举之外的操作时，错误会作为 observation 反馈回去。
+`default` 分支抛出 `Unknown operation`，模型传了枚举之外的操作时，错误会作为 observation 反馈回去。
 
 ### text_stats（text-stats.ts）
 
@@ -202,7 +202,7 @@ return {
 };
 ```
 
-演示任务中它接收的是上一步 `knowledge_search` 的结果——模型自己把上一步 observation 里的文本拼接成了这一步的参数，这就是工具间的数据传递。
+演示任务中它接收的是上一步 `knowledge_search` 的结果，模型自己把上一步 observation 里的文本拼接成了这一步的参数。
 
 ### current_time（current-time.ts）
 
@@ -210,7 +210,7 @@ return {
 
 ### knowledge_search（knowledge-search.ts）
 
-一个模拟的本地知识库检索，演示"检索类工具"的完整形态：
+一个模拟的本地知识库检索，演示检索类工具的完整形态：
 
 ```ts
 const words = query.toLowerCase().split(/\s+/);
@@ -223,7 +223,7 @@ const results = knowledgeBase.map(item => {
   .sort((a, b) => b.score - a.score);
 ```
 
-按"查询词命中数"打分、过滤零分、按分数排序。真实项目中这里会换成向量检索或全文索引，但对 Agent 来说接口完全一样——它只看到 `knowledge_search(query)`。
+按查询词命中数打分、过滤零分、按分数排序。真实项目中这里会换成向量检索或全文索引，但对 Agent 来说接口完全一样，它只看到 `knowledge_search(query)`。
 
 ### save_note / list_notes（notes.ts）
 
@@ -248,7 +248,7 @@ try {
 const observation = await this.tools.execute(toolName, args, this.context);
 ```
 
-`JSON.parse` 失败的兜底从"报错反馈给模型"变成了"传空对象"——无参数工具（如 `list_notes`）因此即使拿到非法参数也能执行。
+`JSON.parse` 失败的兜底从"报错反馈给模型"变成了"传空对象"，无参数工具（如 `list_notes`）因此即使拿到非法参数也能执行。
 
 ### 2. 更详细的 system prompt
 
@@ -271,7 +271,7 @@ The host application executes tools.
 You only request tool calls.
 ```
 
-模型只"请求"调用，真正执行的是宿主程序——这正是 `tool_calls` 机制的本质。
+模型只"请求"调用，实际执行的是宿主程序。
 
 ### 3. maxSteps 从 10 提到 20
 
@@ -303,7 +303,7 @@ const agent = new Agent(llm, tools);
 npx tsx 02Tools/main.ts
 ```
 
-对照开头的任务流程图看输出：Step 1 的两个并行 Action、Step 2 的 Action Input 里出现了 Step 1 搜索到的原文、Step 5 的 `list_notes` 读到了 Step 4 写入的内容——共享状态、数据依赖、多步编排都在这条轨迹里。
+对照开头的任务流程图看输出：Step 1 的两个并行 Action、Step 2 的 Action Input 里出现了 Step 1 搜索到的原文、Step 5 的 `list_notes` 读到了 Step 4 写入的内容，共享状态、数据依赖、多步编排都在这条轨迹里。
 
 ## 动手练习
 
@@ -325,4 +325,4 @@ private readonly context: ToolContext = {
 };
 ```
 
-然后写一个 `call_count` 工具，从 `context.callCount` 读出并返回当前值。想想：`callCount` 应该在哪里递增——每个工具的 `execute` 里，还是 `ToolRegistry.execute` 里？
+然后写一个 `call_count` 工具，从 `context.callCount` 读出并返回当前值。想想：`callCount` 应该在哪里递增，每个工具的 `execute` 里，还是 `ToolRegistry.execute` 里？

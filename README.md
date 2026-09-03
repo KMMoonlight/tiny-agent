@@ -46,7 +46,7 @@ npx tsx 03Hooks/main.ts
 
 ### [04 · Permission](./04Permission/TUTORIAL.md)
 
-在 Hooks 之上加一层权限系统：三级风险模型 + 人工审批，让"模型想做什么"必须经过"人允许做什么"这道闸门。
+在 Hooks 之上加一层权限系统：三级风险模型 + 人工审批，让模型想做什么必须经过人允许做什么这道闸门。
 
 - 三级风险模型：safe 自动放行、sensitive 暂停循环请求人工审批、dangerous 一律拒绝
 - 审批钩子：readline 终端交互，y 批准一次 / n 拒绝 / a 本次运行内总是允许
@@ -64,7 +64,7 @@ npx tsx 04Permission/main.ts
 - 提示词即依赖：system prompt 移出 `agent.ts`，变为构造函数参数，改提示词不再碰核心循环
 - 分节组装：Role / Tool Rules / Runtime Context / Output Format，提示词成为自文档化的配置
 - 上下文注入：当前时间、可用工具清单（与 ToolRegistry 同源）织入提示词，省掉一次工具往返
-- 提示词不是安全边界：提示词负责"引导"，03/04 章的钩子与权限负责"强制"
+- 提示词不是安全边界：提示词负责引导，03/04 章的钩子与权限负责强制
 
 ```bash
 npx tsx 05SystemPrompt/main.ts
@@ -72,7 +72,7 @@ npx tsx 05SystemPrompt/main.ts
 
 ### [06 · Write Todo](./06WriteTodo/TUTORIAL.md)
 
-给 Agent 一个 `write_todo` 工具，让模型自己把计划写下来、边做边更新——把"规划"从隐式推理外化到上下文里。
+给 Agent 一个 `write_todo` 工具，让模型自己把计划写下来、边做边更新，把规划从隐式推理外化到上下文里。
 
 - 问题场景：多步任务中计划只存在于模型的隐式推理里，消息历史变长后漏步骤、重复步骤、顺序漂移
 - todo 清单是模型的记忆：每次调用和 Observation 都进入消息历史，之后每一步 LLM 请求都会重读最新计划
@@ -85,7 +85,7 @@ npx tsx 06WriteTodo/main.ts
 
 ### [07 · Skills](./07Skills/TUTORIAL.md)
 
-给 Agent 一个 `load_skill` 工具，把专业能力打包成独立的 SKILL.md 文件——元数据常驻提示词，完整指令按需加载（渐进式披露）。
+给 Agent 一个 `load_skill` 工具，把专业能力打包成独立的 SKILL.md 文件，元数据常驻提示词，完整指令按需加载（渐进式披露）。
 
 - 问题场景：所有能力指令都堆在系统提示词里，提示词膨胀、注意力稀释、改格式要改代码
 - SKILL.md = frontmatter 元数据（name/description，常驻提示词）+ 正文规范（存在文件里，按需加载）
@@ -111,10 +111,10 @@ npx tsx 08ContextCompact/main.ts
 
 ### [09 · Sub Agents](./09SubAgents/TUTORIAL.md)
 
-把自包含的子任务派给子代理：它在自己的隔离上下文里跑完整个 ReAct 循环，主 Agent 只看到一句最终答案——中间过程根本不进主上下文。
+把自包含的子任务派给子代理：它在自己的隔离上下文里跑完整个 ReAct 循环，主 Agent 只看到一句最终答案，中间过程根本不进主上下文。
 
 - 子代理只是一个工具：`spawn_subagent` 走普通工具通道，循环、钩子、权限、压缩零改动
-- 上下文隔离：每次调用 `new Agent(...)` 得到全新消息历史和 ToolContext，隔离即"再 new 一个实例"
+- 上下文隔离：每次调用 `new Agent(...)` 得到全新消息历史和 ToolContext，隔离即再 new 一个实例
 - 信息瓶颈：任务描述必须自包含（子代理看不到父的对话），子代理没写进答案的数据等于丢失
 - 工具子集即权限边界：`SubagentSpec` 声明可用工具，天然锁死嵌套深度，比提示词约束可靠
 
@@ -124,11 +124,11 @@ npx tsx 09SubAgents/main.ts
 
 ### [10 · Memory](./10Memory/TUTORIAL.md)
 
-给 Agent 跨运行的长期记忆：一个持久化到文件的记忆库 + `save_memory` / `search_memory` 两个工具——这次运行学到的事，下次运行还能捞回来。
+给 Agent 跨运行的长期记忆：一个持久化到文件的记忆库 + `save_memory` / `search_memory` 两个工具，这次运行学到的事，下次运行还能捞回来。
 
 - 两类记忆的分工：消息历史 / notes / todos 是工作记忆（单次运行），memory.json 是长期记忆（跨进程），判断标准是"这条信息下次运行还有用吗"
 - 写入纪律决定记忆质量：只写稳定事实，任务中间状态进 notes/todos，不进长期记忆
-- 检索而非全量注入：记忆按需搜，与 skills 渐进式披露、上下文压缩同源——提示词是最贵的地段
+- 检索而非全量注入：记忆按需搜，与 skills 渐进式披露、上下文压缩同源，提示词是最贵的地段
 - `save_memory` 定级 sensitive：写错的记忆污染未来每一次运行，写入必须经过人工审批
 
 ```bash
@@ -150,12 +150,12 @@ npx tsx 11ExceptionRetry/main.ts
 
 ### [12 · Background Tasks](./12BackgroundTasks/TUTORIAL.md)
 
-把"等待"从循环里拿掉：`run_in_background` 启动任务后立即返回 task id，任务在后台并行执行，完成时结果作为通知自动注入消息历史。
+把等待从循环里拿掉：`run_in_background` 启动任务后立即返回 task id，任务在后台并行执行，完成时结果作为通知自动注入消息历史。
 
 - 三个工具 + 一个注入点：`run_in_background` / `check_task` / `list_tasks` 走普通工具通道，`agent.ts` 每步 drain 完成通知
 - 通知优于轮询：完成事件在下一个 step 自然出现，模型不需要思考"什么时候该查"
 - 隔离的 ToolContext：每个后台任务独立上下文，避免与前台并发写 notes/todos 的竞态
-- 权限延伸：只有 safe 工具能进后台——后台没有审批的机会，代执行工具必须把内部工具的风险等级重新过一遍策略
+- 权限延伸：只有 safe 工具能进后台，后台没有审批的机会，代执行工具必须把内部工具的风险等级重新过一遍策略
 
 ```bash
 npx tsx 12BackgroundTasks/main.ts
@@ -163,7 +163,7 @@ npx tsx 12BackgroundTasks/main.ts
 
 ### [13 · Cron Tasks](./13CronTasks/TUTORIAL.md)
 
-给 Agent 加上时间维度的触发源：模型用 `create_cron` 把一段 prompt 挂到时间表上，调度器到点把它作为一次全新的 run 跑起来——`agent.ts` 一行不用改。
+给 Agent 加上时间维度的触发源：模型用 `create_cron` 把一段 prompt 挂到时间表上，调度器到点把它作为一次全新的 run 跑起来，`agent.ts` 一行不用改。
 
 - cron 在主循环之外：后台任务把结果塞回这条对话（改循环），cron 每次触发是一条新对话（循环不变）
 - 五字段 cron 解析器：`*`、`*/n`、单值、区间、步长、逗号列表；逐分钟扫描求下次触发，创建即校验

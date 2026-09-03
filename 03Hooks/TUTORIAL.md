@@ -1,11 +1,11 @@
 # 03 · Hooks：给 Agent 加上生命周期钩子
 
-上一章（`02Tools`）把工具系统扩展成了完整形态。但回头看 `agent.ts` 的循环，会发现两类代码混在了一起：
+上一章（`02Tools`）把工具系统扩展成了完整形态。但回头看 `agent.ts` 的循环，两类代码混在了一起：
 
 - **主流程**：调用 LLM → 判断 tool_calls → 执行工具 → 追加消息
 - **横切逻辑**：`console.log` 打印轨迹、统计步数、检查某次工具调用该不该放行
 
-这些横切逻辑跟 ReAct 循环本身无关，却只能写在循环体内——想加个"工具调用审计"就得改 Agent，想加个"危险操作拦截"又得改 Agent。本章引入 **Hooks（生命周期钩子）** 解决这件事：
+这些横切逻辑跟 ReAct 循环本身无关，却只能写在循环体内，想加个"工具调用审计"就得改 Agent，想加个"危险操作拦截"又得改 Agent。本章引入 **Hooks（生命周期钩子）** 解决这件事：
 
 - 在循环的关键节点定义五个钩子：`onRunStart` / `onStepStart` / `onToolCall` / `onToolResult` / `onRunEnd`
 - 用 **HookManager** 统一管理钩子的注册和触发，Agent 只在固定位置发事件
@@ -14,7 +14,7 @@
 
 ## 本章的演示任务
 
-`main.ts` 的任务和上一章基本相同，只多了一步"注定要失败"的操作：
+`main.ts` 的任务和上一章基本相同，只多了一步注定要失败的操作：
 
 ```
 1. 使用 knowledge_search 搜索 ReAct Agent 的相关知识
@@ -47,7 +47,7 @@ flowchart TD
 }
 ```
 
-对模型来说，"被钩子拦截"和"工具执行失败"长得一模一样——都是一个失败的 Observation。它不需要知道钩子的存在，读到原因后在总结里如实汇报即可。**拦截逻辑完全住在宿主程序一侧，这正是 hooks 的价值。**
+对模型来说，"被钩子拦截"和"工具执行失败"长得一模一样，都是一个失败的 Observation。它不需要知道钩子的存在，读到原因后在总结里如实汇报即可。**拦截逻辑完全住在宿主程序一侧，这正是 hooks 的价值。**
 
 ## 代码结构
 
@@ -62,14 +62,14 @@ flowchart TD
 ├── knowledge-search.ts
 ├── notes.ts
 ├── hooks.ts             # 新增：AgentHooks 接口 + HookManager
-├── logger-hook.ts       # 新增：钩子示例——日志（从 Agent 里搬出来的 console.log）
-├── metrics-hook.ts      # 新增：钩子示例——指标统计
-├── guard-hook.ts        # 新增：钩子示例——安全策略拦截
+├── logger-hook.ts       # 新增：钩子示例，日志（从 Agent 里搬出来的 console.log）
+├── metrics-hook.ts      # 新增：钩子示例，指标统计
+├── guard-hook.ts        # 新增：钩子示例，安全策略拦截
 ├── agent.ts             # Agent：循环中嵌入五个钩子触发点
 └── main.ts              # 入口：组装工具 + 注册钩子 + 演示任务
 ```
 
-相比上一章，Agent 循环里的 `console.log` 全部消失了——它们被搬到了 `logger-hook.ts`。主流程和横切逻辑第一次分开了：
+相比上一章，Agent 循环里的 `console.log` 全部消失了，它们被搬到了 `logger-hook.ts`。主流程和横切逻辑第一次分开了：
 
 ```mermaid
 flowchart LR
@@ -127,7 +127,7 @@ export type ToolCallDecision =
 
 ### AgentHooks 接口
 
-一个钩子就是一个实现了 `AgentHooks` 的对象，五个方法全部可选——关心什么就实现什么：
+一个钩子就是一个实现了 `AgentHooks` 的对象，五个方法全部可选，关心什么就实现什么：
 
 ```ts
 export interface AgentHooks {
@@ -150,7 +150,7 @@ export interface AgentHooks {
 }
 ```
 
-所有方法都允许返回 `Promise`——钩子可以做异步的事（写日志文件、上报监控系统、调远程审批接口），Agent 会 `await` 它。
+所有方法都允许返回 `Promise`，钩子可以做异步的事（写日志文件、上报监控系统、调远程审批接口），Agent 会 `await` 它。
 
 ### HookManager
 
@@ -202,7 +202,7 @@ constructor(
 ) { }
 ```
 
-不传 hooks 时默认一个空的 `HookManager`——循环照常运行，只是没有钩子监听。这让 hooks 对 Agent 来说是纯粹的可选扩展。
+不传 hooks 时默认一个空的 `HookManager`，循环照常运行，只是没有钩子监听。这让 hooks 对 Agent 来说是纯粹的可选扩展。
 
 ### 1. 日志被搬走了
 
@@ -241,7 +241,7 @@ messages.push({
 });
 ```
 
-被拦截时**工具根本不执行**，拦截原因被包装成失败的 Observation，走和工具报错完全相同的路径反馈给模型。注意 `emitToolResult` 在被拦截时也会触发——日志钩子因此能统一打印所有 Observation，不需要关心这次调用是执行了还是被拦了。
+被拦截时**工具根本不执行**，拦截原因被包装成失败的 Observation，走和工具报错完全相同的路径反馈给模型。注意 `emitToolResult` 在被拦截时也会触发，日志钩子因此能统一打印所有 Observation，不需要关心这次调用是执行了还是被拦了。
 
 ### 3. 循环出口处发 onRunEnd
 
@@ -259,7 +259,7 @@ if (toolCalls.length === 0) {
 
 ## 三个示例钩子
 
-### loggerHook（logger-hook.ts）：观测——把 console.log 搬出 Agent
+### loggerHook（logger-hook.ts）：观测，把 console.log 搬出 Agent
 
 ```ts
 export const loggerHook: AgentHooks = {
@@ -282,9 +282,9 @@ export const loggerHook: AgentHooks = {
 };
 ```
 
-输出和上一章一模一样，但来源变了。这就是"横切逻辑插件化"最直观的样子。
+输出和上一章一模一样，但来源变了。这就是横切逻辑插件化最直观的样子。
 
-### createMetricsHook（metrics-hook.ts）：观测——有状态的钩子
+### createMetricsHook（metrics-hook.ts）：观测，有状态的钩子
 
 ```ts
 export function createMetricsHook(): AgentHooks {
@@ -328,9 +328,9 @@ Per tool: {
 Duration: 17457 ms
 ```
 
-注意 `save_note: 2`——被拦截的那次调用也经过了 `onToolCall`，所以被统计在内。统计口径（拦截算不算）由钩子自己决定，Agent 不关心。
+注意 `save_note: 2`，被拦截的那次调用也经过了 `onToolCall`，所以被统计在内。统计口径（拦截算不算）由钩子自己决定，Agent 不关心。
 
-### guardHook（guard-hook.ts）：拦截——安全策略
+### guardHook（guard-hook.ts）：拦截，安全策略
 
 ```ts
 const RESERVED_NOTE_KEY_PREFIX = "sys_";
@@ -353,7 +353,7 @@ export const guardHook: AgentHooks = {
 };
 ```
 
-只实现 `onToolCall` 一个方法。返回 `undefined`（或 `{ action: "allow" }`）即放行；返回 `block` 即拦截。真实项目里这里可以是：危险工具二次确认、参数合规校验、调用配额限制、按用户角色的权限控制——模式相同，都是"模型想做什么"和"宿主允许做什么"之间的一道闸门。
+只实现 `onToolCall` 一个方法。返回 `undefined`（或 `{ action: "allow" }`）即放行；返回 `block` 即拦截。真实项目里这里可以是：危险工具二次确认、参数合规校验、调用配额限制、按用户角色的权限控制，模式相同，都是模型想做什么和宿主允许做什么之间的一道闸门。
 
 ## 入口（main.ts）
 
@@ -372,7 +372,7 @@ hooks.register(guardHook);
 const agent = new Agent(llm, tools, hooks);
 ```
 
-工具注册给"模型能用什么"，钩子注册给"宿主想看/管什么"——两件事在入口分开组装，Agent 本身对两者都只是被动接收。
+工具注册管的是模型能用什么，钩子注册管的是宿主想看什么、管什么，两件事在入口分开组装，Agent 本身对两者都只是被动接收。
 
 ## 运行
 
@@ -380,13 +380,13 @@ const agent = new Agent(llm, tools, hooks);
 npx tsx 03Hooks/main.ts
 ```
 
-对照运行输出观察三件事：日志格式与上一章完全一致（但来自钩子）；Step 4 里 `save_note('sys_config')` 的 Observation 是 `Tool call blocked: ...`；结尾的 METRICS 汇总由指标钩子打印。最后模型的总结会准确告诉你 `sys_config` 保存失败以及策略原因——钩子通过 Observation 间接影响了模型的输出。
+对照运行输出观察三件事：日志格式与上一章完全一致（但来自钩子）；Step 4 里 `save_note('sys_config')` 的 Observation 是 `Tool call blocked: ...`；结尾的 METRICS 汇总由指标钩子打印。最后模型的总结会准确告诉你 `sys_config` 保存失败以及策略原因，钩子通过 Observation 间接影响了模型的输出。
 
 ## 动手练习
 
 当前的设计里 `onToolResult` 只能"看"结果，不能改。试着自己实现一个**超长 Observation 截断**钩子：工具返回的结果超过 200 字符时，截断后再反馈给模型，防止对话历史被超大结果撑爆。
 
-提示：这需要改 `HookManager.emitToolResult`，让它从"纯通知"变成"链式传递"——每个钩子接收上一个钩子返回的（可能被修改过的）`ToolExecutionResult`，最终把修改后的结果返回给 Agent 追加进消息。想一想：
+提示：这需要改 `HookManager.emitToolResult`，让它从"纯通知"变成"链式传递"，每个钩子接收上一个钩子返回的（可能被修改过的）`ToolExecutionResult`，最终把修改后的结果返回给 Agent 追加进消息。想一想：
 
 1. `emitToolResult` 的返回类型应该怎么改？
 2. 多个钩子都修改结果时，顺序应该是什么？

@@ -139,7 +139,7 @@ export interface LLMClient {
 }
 ```
 
-Agent 只依赖这个接口，不依赖任何具体的 LLM 厂商。`OpenAICompatibleClient` 是它的实现——任何兼容 OpenAI 格式的服务（OpenAI、DeepSeek、本地 vLLM 等）都能用。
+Agent 只依赖这个接口，不依赖任何具体的 LLM 厂商。`OpenAICompatibleClient` 是它的实现，任何兼容 OpenAI 格式的服务（OpenAI、DeepSeek、本地 vLLM 等）都能用。
 
 ### OpenAICompatibleClient
 
@@ -185,7 +185,7 @@ const model = process.env.LLM_MODEL;
 
 ## 第二步：工具（tools.ts）
 
-工具是 Agent 的"手"。每个工具分两部分：
+工具是 Agent 的手。每个工具分两部分：
 
 ```
 ┌────────────┬──────────────────────────────────────────┐
@@ -239,7 +239,7 @@ const calculator: Tool = {
 };
 ```
 
-`definition` 会被原样发给 LLM——模型根据 `name`、`description` 和参数 schema 决定什么时候调用、传什么参数。`execute` 则只在本地运行，模型看不到它的实现。
+`definition` 会被原样发给 LLM，模型根据 `name`、`description` 和参数 schema 决定什么时候调用、传什么参数。`execute` 则只在本地运行，模型看不到它的实现。
 
 ### 工具注册表
 
@@ -275,7 +275,7 @@ const messages: Message[] = [
 ];
 ```
 
-对话从一个 system prompt 和用户问题开始。整个循环中，`messages` 数组会不断变长——它就是 Agent 的"记忆"，每次调用 LLM 都完整发送。
+对话从一个 system prompt 和用户问题开始。整个循环中，`messages` 数组会不断变长，它就是 Agent 的记忆，每次调用 LLM 都完整发送。
 
 ### 主循环
 
@@ -389,7 +389,9 @@ const agent = new Agent(llm, tools);  // 注入客户端和工具表
 const answer = await agent.run("计算 123 * 456, 然后再加100");
 ```
 
-`Agent` 通过构造函数接收依赖，所以它不关心你用哪个 LLM 服务、有哪些工具——这些都由入口决定。
+`Agent` 通过构造函数接收依赖，所以它不关心你用哪个 LLM 服务、有哪些工具，这些都由入口决定。
+
+这个实现做了不少简化：每一步都把完整对话历史发给模型，轮次多了 token 开销会涨得很快；工具报错也只是把错误文本喂回给模型，能不能恢复全看模型自己。作为最小可运行的 ReAct 示例够用，真实场景还需要在这两点上继续补。
 
 ## 动手练习：添加一个新工具
 
@@ -417,4 +419,4 @@ const getCurrentTime: Tool = {
 tools.set(getCurrentTime.definition.function.name, getCurrentTime);
 ```
 
-然后在 `main.ts` 里问 `"现在几点了？"`——不需要改 `agent.ts` 的任何代码，循环会自动把这个新工具的 definition 发给模型，模型会自己决定调用它。
+然后在 `main.ts` 里问 `"现在几点了？"`，不需要改 `agent.ts` 的任何代码，循环会自动把这个新工具的 definition 发给模型，模型会自己决定调用它。

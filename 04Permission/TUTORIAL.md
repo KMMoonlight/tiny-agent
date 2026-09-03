@@ -1,6 +1,6 @@
 # 04 · Permission：给工具调用加上权限校验与审批
 
-上一章（`03Hooks`）用 `guardHook` 演示了拦截：`save_note` 的 key 以 `sys_` 开头就直接 block。那是一条**静态规则**——策略写死在代码里，调用一到，规则自己就能判定放行还是拦截。
+上一章（`03Hooks`）用 `guardHook` 演示了拦截：`save_note` 的 key 以 `sys_` 开头就直接 block。那是一条**静态规则**：策略写死在代码里，调用一到，规则自己就能判定放行还是拦截。
 
 但真实场景里大量操作没法这么判：
 
@@ -8,15 +8,15 @@
 - "发一封邮件"能放行吗？得让真人看一眼收件人和内容才知道
 - 同一个工具，这次调用安全，下次调用可能就不安全
 
-这类操作需要的不是静态规则，而是**权限模型 + 人工审批（human-in-the-loop）**。本章在 hooks 之上加一层权限系统：
+这类操作静态规则覆盖不了，需要**权限模型 + 人工审批（human-in-the-loop）**。本章在 hooks 之上加一层权限系统：
 
 - 用**三级风险模型**给工具分级：`safe` 自动放行、`sensitive` 暂停循环向人类请求审批、`dangerous` 一律拒绝
 - 审批钩子通过 `readline` 在终端里问用户：批准（`y`）、拒绝（`n`）、本次运行内总是允许（`a`）
-- 审批结果仍然走上一章的 `ToolCallDecision` 通道反馈给模型——**Agent 的代码一行都不用改**
+- 审批结果仍然走上一章的 `ToolCallDecision` 通道反馈给模型，**Agent 的代码一行都不用改**
 
 ## 本章的演示任务
 
-`main.ts` 的任务链里埋了两种"敏感"操作：
+`main.ts` 的任务链里埋了两种敏感操作：
 
 ```
 1. 使用 knowledge_search 搜索 ReAct Agent 的相关知识
@@ -50,7 +50,7 @@
 }
 ```
 
-注意这里和上一章 `guardHook` 的关键区别：上一章是"规则说拦就拦"，本章是"**规则定级别，级别决定是否问人**"。`sensitive` 这一级的存在，承认了有些判断只有人能做。
+注意这里和上一章 `guardHook` 的关键区别：上一章是规则说拦就拦，本章是**规则定级别，级别决定是否问人**。`sensitive` 这一级的存在，承认了有些判断只有人能做。
 
 ## 代码结构
 
@@ -73,7 +73,7 @@
 └── main.ts              # 入口：注册审批钩子 + 演示任务
 ```
 
-最值得注意的一行：**`agent.ts` 与上一章完全相同**。权限系统是纯粹的钩子层增量——这正是上一章把横切逻辑拆出去换来的回报。上一章的 `guard-hook.ts` 被本章的权限系统取代，它的静态规则能力被 `dangerous` 级别吸收了。
+注意 `agent.ts` 这一行：与上一章完全相同，一行未改。权限系统是纯粹的钩子层增量，这正是上一章把横切逻辑拆出去换来的回报。上一章的 `guard-hook.ts` 被本章的权限系统取代，它的静态规则能力被 `dangerous` 级别吸收了。
 
 ```mermaid
 flowchart LR
@@ -131,7 +131,7 @@ export const defaultPolicy: PermissionPolicy = {
 };
 ```
 
-`defaultLevel: "sensitive"` 是个有意的选择：**没被策略显式覆盖的工具，默认按敏感处理**。新增一个工具却忘了配权限时，它不会悄悄获得自由通行证——宁可多问一次人。
+`defaultLevel: "sensitive"` 是个有意的选择：**没被策略显式覆盖的工具，默认按敏感处理**。新增一个工具却忘了配权限时，它不会悄悄获得自由通行证，宁可多问一次人。
 
 ## 审批钩子（approval-hook.ts）
 
@@ -173,15 +173,15 @@ export function createApprovalHook(policy: PermissionPolicy): AgentHooks {
 
 几个设计点：
 
-- **`onToolCall` 是 async 的**。上一章就埋好了这条路——`AgentHooks` 所有方法都允许返回 `Promise`，Agent 会 `await`。所以"停在这里等用户敲键盘"这件事，钩子层天然支持，循环代码不用动。
-- **审批决定走 `ToolCallDecision` 通道**。人拒绝时返回 `block`，原因被包装成失败的 Observation 反馈给模型，和工具报错、静态拦截长得一模一样。模型读到 `"Permission denied by the human operator"` 后会在总结里如实汇报。
-- **`sessionAllowed` 记住 "always"**。同一次运行里用户对一个工具点过 `a`，后续调用不再询问——这是真实 Agent 工具（Claude Code、Cursor 等）的标准交互。
-- **`onRunEnd` 里关 readline**。打开的 readline 接口会挂住 stdin 让进程无法退出，用完必须关。
-- **stdin 关闭时自动拒绝（fail-closed）**。stdin 提前 EOF（比如管道喂输入、CI 环境）时 readline 会直接关闭，此时再问 `rl.question` 会抛 `ERR_USE_AFTER_CLOSE`。钩子监听 `close` 事件，发现无法与人交互时一律按"拒绝"处理——**问不到人，就当人说了不**，这是审批系统的安全默认值。
+- **`onToolCall` 是 async 的**，上一章就埋好了这条路，`AgentHooks` 所有方法都允许返回 `Promise`，Agent 会 `await`。所以停下来等用户敲键盘这件事，钩子层天然支持，循环代码不用动。
+- **审批决定走 `ToolCallDecision` 通道**，人拒绝时返回 `block`，原因被包装成失败的 Observation 反馈给模型，和工具报错、静态拦截长得一模一样。模型读到 `"Permission denied by the human operator"` 后会在总结里如实汇报。
+- **`sessionAllowed` 记住 "always"**，同一次运行里用户对一个工具点过 `a`，后续调用不再询问，这是真实 Agent 工具（Claude Code、Cursor 等）的标准交互。
+- **`onRunEnd` 里关 readline**，打开的 readline 接口会挂住 stdin 让进程无法退出，用完必须关。
+- **stdin 关闭时自动拒绝（fail-closed）**，stdin 提前 EOF（比如管道喂输入、CI 环境）时 readline 会直接关闭，此时再问 `rl.question` 会抛 `ERR_USE_AFTER_CLOSE`。钩子监听 `close` 事件，发现无法与人交互时一律按拒绝处理。**问不到人，就当人说了不**，这是审批系统的安全默认值。
 
 ## 入口（main.ts）
 
-组装方式上一章完全一样，只是注册的钩子换了：
+组装方式和上一章完全一样，只是注册的钩子换了：
 
 ```ts
 tools.register(saveNoteTool);
@@ -205,7 +205,7 @@ npx tsx 04Permission/main.ts
 - `save_note` 批了、`delete_note` 被拒 → `list_notes` 里 `react_demo` 还在，模型会解释删除被权限系统拒绝
 - `save_note` 拒了 → 后续的删除请求因为笔记不存在/仍被拒而失败，模型的总结也随之改变
 
-同一个任务、同一份代码，**人的审批决定改变了运行轨迹**——这就是 human-in-the-loop 的含义。
+同一个任务、同一份代码，**人的审批决定改变了运行轨迹**，这就是 human-in-the-loop 的含义。
 
 ## 动手练习
 
@@ -219,7 +219,7 @@ export function riskLevelOf(
 ): RiskLevel
 ```
 
-然后实现这条规则：`save_note` 默认是 `sensitive`，但当 key 以 `sys_` 开头时升级为 `dangerous`——也就是把上一章 `guardHook` 的静态规则表达成权限模型里的一次"级别升级"。想一想：
+然后实现这条规则：`save_note` 默认是 `sensitive`，但当 key 以 `sys_` 开头时升级为 `dangerous`，也就是把上一章 `guardHook` 的静态规则表达成权限模型里的一次级别升级。想一想：
 
 1. 策略表 `Record<string, RiskLevel>` 还够用吗？是不是该允许 `tools[name]` 是一个返回级别的函数？
-2. 级别升级后，`approval-hook.ts` 需要改吗？（提示：不需要，它只消费 `riskLevelOf` 的结果——策略的复杂度被收拢在了一个函数里。）
+2. 级别升级后，`approval-hook.ts` 需要改吗？（提示：不需要，它只消费 `riskLevelOf` 的结果，策略的复杂度被收拢在了一个函数里。）
