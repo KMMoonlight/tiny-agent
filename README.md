@@ -135,6 +135,45 @@ npx tsx 09SubAgents/main.ts
 npx tsx 10Memory/main.ts
 ```
 
+### [11 · Exception Handle and Retry](./11ExceptionRetry/TUTORIAL.md)
+
+补齐 Agent 错误处理中缺失的一环：工具失败早已包成 Observation 喂回模型，但 LLM 请求一失败整个 run 直接崩。本章给 LLM 请求加上错误分类、结构化错误和指数退避重试。
+
+- 三类错误的分类学：工具错误进消息历史（模型处理）、LLM 请求错误静默重试（基础设施处理）、终止性错误直接 throw
+- `LLMError` 结构化错误：status + retryable 两个字段做决策，不再解析错误消息字符串
+- `RetryingLLMClient` 装饰器：再包一层实现同一个 `LLMClient` 接口，Agent、压缩、子代理同时受益，一行业务代码不改
+- 指数退避 + `onRetry` 回调：给故障方留恢复时间，每次重试都留日志
+
+```bash
+npx tsx 11ExceptionRetry/main.ts
+```
+
+### [12 · Background Tasks](./12BackgroundTasks/TUTORIAL.md)
+
+把"等待"从循环里拿掉：`run_in_background` 启动任务后立即返回 task id，任务在后台并行执行，完成时结果作为通知自动注入消息历史。
+
+- 三个工具 + 一个注入点：`run_in_background` / `check_task` / `list_tasks` 走普通工具通道，`agent.ts` 每步 drain 完成通知
+- 通知优于轮询：完成事件在下一个 step 自然出现，模型不需要思考"什么时候该查"
+- 隔离的 ToolContext：每个后台任务独立上下文，避免与前台并发写 notes/todos 的竞态
+- 权限延伸：只有 safe 工具能进后台——后台没有审批的机会，代执行工具必须把内部工具的风险等级重新过一遍策略
+
+```bash
+npx tsx 12BackgroundTasks/main.ts
+```
+
+### [13 · Cron Tasks](./13CronTasks/TUTORIAL.md)
+
+给 Agent 加上时间维度的触发源：模型用 `create_cron` 把一段 prompt 挂到时间表上，调度器到点把它作为一次全新的 run 跑起来——`agent.ts` 一行不用改。
+
+- cron 在主循环之外：后台任务把结果塞回这条对话（改循环），cron 每次触发是一条新对话（循环不变）
+- 五字段 cron 解析器：`*`、`*/n`、单值、区间、步长、逗号列表；逐分钟扫描求下次触发，创建即校验
+- 调度器三层结构：tick → 到点入队 → 串行 drain，慢 run 时触发排队而不并发互踩
+- 每次触发是全新的 run：prompt 必须自包含，和子代理同一个"信息瓶颈"
+
+```bash
+npx tsx 13CronTasks/main.ts
+```
+
 ## 准备工作
 
 ```bash
